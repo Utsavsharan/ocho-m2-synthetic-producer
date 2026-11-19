@@ -1,0 +1,33 @@
+name: OCTO M2 test-only Sigstore provenance
+on:
+  push:
+    branches:
+      - octo-m2-e4-synthetic-attestation-20261118
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  synthetic-only-attestation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout exact producer source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Generate synthetic-only source artifact
+        run: python3 generate_synthetic_manifest.py
+      - name: Reject malformed or stale artifact
+        run: python3 verify_synthetic_manifest.py
+      - name: Sign artifact provenance with GitHub OIDC and Sigstore
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: artifacts/octo-m2-synthetic-source.json
+      - name: Upload public synthetic artifact for external verification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: octo-m2-public-synthetic-source
+          path: artifacts/octo-m2-synthetic-source.json
+          retention-days: 3
